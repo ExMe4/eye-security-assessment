@@ -33,10 +33,15 @@ public class AnalyticsService {
             HttpEntity<List<AnalyticsRecord>> entity = new HttpEntity<>(batch, headers);
 
             try {
-                restTemplate.postForEntity(ANALYTICS_URL, entity, String.class);
+                ResponseEntity<String> response = restTemplate.postForEntity(ANALYTICS_URL, entity, String.class);
+                System.out.println("Analytics batch [" + start + "-" + end + "] response: " + response.getStatusCode());
+                if (response.getStatusCode().value() == 429) {
+                    System.err.println("Rate limit hit, waiting 10s...");
+                    Thread.sleep(10_000);
+                    continue;
+                }
             } catch (Exception e) {
                 System.err.println("Analytics ingestion failed: " + e.getMessage());
-                // todo retry
             }
 
             start += BATCH_SIZE;

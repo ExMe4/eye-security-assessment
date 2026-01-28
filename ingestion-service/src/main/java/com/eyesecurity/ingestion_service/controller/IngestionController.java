@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @RestController
@@ -41,6 +42,10 @@ public class IngestionController {
     @PostMapping
     public String ingestRecords(@RequestBody List<SecurityLogRecord> records) throws InterruptedException {
 
+        System.out.println("Received " + records.size() + " records for ingestion");
+
+        AtomicInteger enrichCounter = new AtomicInteger();
+
         List<AnalyticsRecord> analyticsRecords = records.stream()
                 .map(r -> {
                     // Validate category
@@ -60,8 +65,9 @@ public class IngestionController {
 
                     if (enrichResp == null) {
                         System.err.println("Enrichment failed for record id " + r.getId());
-                        return null; // skip
+                        return null;
                     } else {
+                        enrichCounter.getAndIncrement();
                         System.out.println("Enrichment successful for record id " + r.getId());
                     }
 
@@ -83,6 +89,6 @@ public class IngestionController {
         // Send to analytics
         analyticsService.sendRecords(analyticsRecords);
 
-        return "Ingestion finished: " + analyticsRecords.size() + " records processed";
+        return "Ingestion finished: " + records.size() + " records received, " + enrichCounter + " records enriched and " + analyticsRecords.size() + " records sent to Analytics";
     }
 }
