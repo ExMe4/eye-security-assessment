@@ -14,7 +14,7 @@ public class AnalyticsService {
     private static final String API_AUTH = "eye-am-hiring";
     private static final int BATCH_SIZE = 20;
 
-    private final RestTemplate restTemplate;
+    RestTemplate restTemplate;
 
     public AnalyticsService() {
         this.restTemplate = new RestTemplate();

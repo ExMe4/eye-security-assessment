@@ -11,7 +11,7 @@ public class EnrichmentService {
 
     private static final String ENRICHMENT_URL = "https://api.heyering.com/enrichment";
     private static final String API_AUTH = "eye-am-hiring";
-    private final RestTemplate restTemplate;
+    RestTemplate restTemplate;
 
     public EnrichmentService() {
         this.restTemplate = new RestTemplate();
