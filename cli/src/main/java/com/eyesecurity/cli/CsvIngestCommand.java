@@ -1,5 +1,10 @@
 package com.eyesecurity.cli;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import com.eyesecurity.cli.model.SecurityLogRecord;
 import java.io.BufferedReader;
 import java.nio.file.Files;
@@ -99,6 +104,34 @@ public class CsvIngestCommand implements Runnable {
             );
         } else {
             System.out.println("No category filter applied.");
+        }
+
+        sendToMicroservice(filteredRecords);
+    }
+
+    private void sendToMicroservice(List<SecurityLogRecord> records) {
+        if (records.isEmpty()) {
+            System.out.println("No records to send to microservice.");
+            return;
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            String json = mapper.writeValueAsString(records);
+
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://localhost:8080/ingest"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("Microservice response: " + response.statusCode() + " " + response.body());
+
+        } catch (Exception e) {
+            System.err.println("Failed to send records to microservice: " + e.getMessage());
         }
     }
 
