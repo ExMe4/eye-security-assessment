@@ -18,20 +18,27 @@ public class EnrichmentService {
     }
 
     public EnrichmentResponse enrich(EnrichmentRequest request) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", API_AUTH);
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        int maxRetries = 3;
+        int attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Authorization", API_AUTH);
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                HttpEntity<EnrichmentRequest> entity = new HttpEntity<>(request, headers);
 
-        HttpEntity<EnrichmentRequest> entity = new HttpEntity<>(request, headers);
+                ResponseEntity<EnrichmentResponse> response =
+                        restTemplate.postForEntity(ENRICHMENT_URL, entity, EnrichmentResponse.class);
 
-        try {
-            ResponseEntity<EnrichmentResponse> response = restTemplate
-                    .postForEntity(ENRICHMENT_URL, entity, EnrichmentResponse.class);
-            return response.getBody();
-        } catch (Exception e) {
-            // handle intermittent errors
-            System.err.println("Enrichment failed for record id " + request.getId() + ": " + e.getMessage());
-            return null; // todo intermittent issues
+                return response.getBody();
+            } catch (Exception e) {
+                attempt++;
+                System.err.println("Enrichment attempt " + attempt + " failed for record id "
+                        + request.getId() + ": " + e.getMessage());
+                try { Thread.sleep(1000 * attempt); } catch (InterruptedException ignored) {}
+            }
         }
+        System.err.println("Enrichment failed for record id " + request.getId());
+        return null;
     }
 }
