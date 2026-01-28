@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +38,19 @@ public class IngestionController {
             "supplychaincompromise",
             "trustedrelationship",
             "validaccounts"
+    );
+
+    private static final Map<String, String> CATEGORY_TO_MITRE = Map.of(
+            "contentinjection", "T1659",
+            "drivebycompromise", "T1189",
+            "exploitpublicfacingapplication", "T1190",
+            "externalremoteservices", "T1133",
+            "hardwareadditions", "T1200",
+            "phishing", "T1566",
+            "replicationthroughremovablemedia", "T1091",
+            "supplychaincompromise", "T1195",
+            "trustedrelationship", "T1199",
+            "validaccounts", "T1078"
     );
 
     @PostMapping
@@ -76,8 +90,12 @@ public class IngestionController {
                     aRecord.setId(r.getId());
                     aRecord.setAsset(r.getAssetName());
                     aRecord.setIp(r.getIp());
-                    aRecord.setCategory(enrichResp.getCategory());
-                    aRecord.setAsn(enrichResp.getAsn());
+                    String mitreCategory = CATEGORY_TO_MITRE.get(r.getCategory().toLowerCase());
+                    if (mitreCategory == null) {
+                        System.err.println("Unknown category for MITRE mapping: '" + r.getCategory() + "'");
+                        mitreCategory = "UNKNOWN";
+                    }
+                    aRecord.setCategory(mitreCategory);                    aRecord.setAsn(enrichResp.getAsn());
                     aRecord.setCorrelationId(enrichResp.getCorrelationId());
 
                     return aRecord;
